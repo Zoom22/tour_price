@@ -1,0 +1,51 @@
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+LABEL developer="is.zoom@yandex.ru"
+
+WORKDIR /tmp
+
+RUN addgroup --gid <GID> developer
+RUN adduser --quiet --shell /bin/bash --uid <UID> --gid <GID> --disabled-password --gecos "" developer
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    locales \
+    zip unzip \
+    apt-transport-https \
+    software-properties-common \
+    gnupg2 \
+    apt-utils
+
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# ---------------------------------------------------------
+# Install packages & php extensions
+# ---------------------------------------------------------
+RUN add-apt-repository -y ppa:ondrej/php && \
+    apt-get install -y \
+    php8.2-cli \
+    php8.2-bcmath \
+    php8.2-mbstring \
+    php8.2-xml \
+    php8.2-xdebug \
+    php8.2-phpdbg \
+    php8.2-pcov
+
+RUN apt-get install -y git php8.2-fpm
+
+RUN apt-get autoremove -y && apt-get autoclean -y && \
+    rm -rf /var/cache/apt && \
+    rm -rf /var/lib/apt
+
+RUN update-alternatives --set php /usr/bin/php8.2
+
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
+
+USER developer
